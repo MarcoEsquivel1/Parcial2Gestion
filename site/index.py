@@ -1,4 +1,8 @@
 from flask import Flask, render_template, request, session, redirect, url_for, g
+from llaves import *
+import smtplib
+import random
+from functions import *
 
 class Usuario:
     def __init__(self, id, email, password, name, age, lastname, description, username=""):
@@ -88,7 +92,49 @@ def perfil():
         return redirect(url_for('login'))
     return render_template('perfil.html')
 
+@app.route('/send_code', methods=['POST' , 'GET'])
+def scode():
+    if request.method == 'POST':
+        session.pop('id_user', None)
+        email = request.form['email']
+        usuario = [x for x in usuarios if x.email == email]
+        if usuario:
+            session['id_user'] = usuario[0].id
+            session['email'] = usuario[0].email
+            otp = random.randint(1000,10000)
+            session['otp'] = otp
+            """ return str(session['otp']) + " " + session['email'] """
+            can = send_email(otp,usuario[0].email)
+            if can:
+                return redirect("/code_verify", code=302)
+            else:
+                return 'Error'
+                return redirect("/login", code=302)
+        else:
+            return redirect('/send_code', code=302)
+    else:
+        if g.usuario:
+            return redirect("/perfil", code=302)
+        else:
+            return render_template('code_email.html', error=False)
 
+@app.route('/code_verify', methods=['POST' , 'GET'])
+def code_verify():
+    if request.method == 'POST':
+        code = request.form['code']
+        print(code)
+        print(session['otp'])
+        if str(code) == str(session['otp']):
+            session['logged_in'] = True
+            print('llega')
+            return redirect("/perfil", code=302)
+        else:
+            return redirect("/code_verify", code=302)
+    else:
+        if g.usuario:
+            return redirect("/perfil", code=302)
+        else:
+            return render_template('code_verify.html', error=False)
 
 @app.route('/oauth_login', methods=['GET', 'POST'])
 def github_login():
