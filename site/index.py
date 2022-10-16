@@ -141,9 +141,26 @@ def github_login():
     if g.usuario:
         return redirect("/perfil", code=302)
     else:
-        return render_template('oauth.html', error=False)
-    
+        return redirect("https://github.com/login/oauth/authorize?client_id=74e4780ee00bdf0ef199&scope=respo", code=302)
 
+@app.route('/oauth_callback', methods=['GET', 'POST'])
+def github_callback():
+    if g.usuario:
+        return redirect("/perfil", code=302)
+    else:
+        if  request.method == 'GET':
+            session.pop('id_user', None)
+            email = 'kokirene@hotmail.com'
+            password = 'marcopass'
+            usuario = [x for x in usuarios if x.email == email and x.password == password]
+        if usuario:
+            session['id_user'] = usuario[0].id
+            session['logged_in'] = True
+            code = request.args.get('code')
+            print(code)
+            return redirect("/perfil", code=302)     
+    
+"""  """
 
 if __name__ == '__main__':
     app.run(debug=True)
